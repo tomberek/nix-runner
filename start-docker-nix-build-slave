@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+# Requires: curl, docker, grep
+cecho(){
+    printf "\033[36m"
+    echo "$@"
+    printf "\033[0m"
+}
+
+working_dir_name=".nix-docker-build-slave"
+working_dir="$HOME/$working_dir_name"
+mkdir -p "$working_dir"
+
+ssh_id_file="$working_dir/insecure_rsa"
+remote_sys_conf="$working_dir/remote-systems.conf"
+
+ssh_config="$HOME/.ssh/config"
+
+docker_machine_name="nix-docker-build-slave"
+
+# -- Display info and troubleshooting tips --
+cecho "## Use Docker Container as Nix Build Slave"
+cecho "##"
+cecho "## Usage: source $0"
+cecho "##"
+cecho "##     Either this is sourced in order to correctly set your env vars"
+cecho "##     or you set it manually by running:"
+echo  export NIX_REMOTE_SYSTEMS="$remote_sys_conf"
+cecho "##"
+cecho "## Troubleshooting: you can clean up the build slave artifacts and start over by:"
+cecho "##   1. rm -r ~/$working_dir_name"
+cecho "##   2. Delete entry in ~/.ssh/config for"
+cecho "##        Host \"$docker_machine_name\""
+cecho "##   3. Delete the docker container"
+cecho "##        docker kill $docker_machine_name"
+cecho "##        docker rm $docker_machine_name"
+cecho
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    cecho "Please read the usage instructions, this file should be sourced"
+    exit 1
+fi
+
+
+# -- Download SSH credentials for docker container --
+if [ ! -f "$ssh_id_file" ]; then
+    cecho ">>> Downloading SSH credentials for the docker container"
+    rm -f "$ssh_id_file" "$ssh_id_file.pub"
+    curl -fsSL https://raw.githubusercontent.com/LnL7/nix-docker/master/ssh/insecure_rsa -o "$ssh_id_file"
+    curl -fsSL https://raw.githubusercontent.com/LnL7/nix-docker/master/ssh/insecure_rsa.pub -o "$ssh_id_file.pub"
+    chmod 600 "$ssh_id_file"
+fi
+
+# -- Set up SSH configuration --
+[ -f "$ssh_config" ] || touch "$ssh_config"
+if ! grep "$docker_machine_name" "$HOME/.ssh/config" > /dev/null; then
+  cecho ">>> Adding an entry to $ssh_config for $docker_machine_name"
+  cat >> "$ssh_config" <<CONF
+
+Host "$docker_machine_name"
+  User root
+  HostName 127.0.0.1
+  Port 3022
+  IdentityFile "$ssh_id_file"
+  SendEnv AWS_ACCESS_KEY_ID
+  SendEnv AWS_SECRET_ACCESS_KEY
+CONF
+else
+  cecho ">>> SSH already contains entry for $docker_machine_name in $ssh_config"
+fi
+
+# -- Start docker container --
+if ( docker ps | grep --color -F nix-docker-build-slave ; ); then
+    cecho ">>> Docker container $docker_machine_name already started"
+else
+    cecho ">>> Starting docker container: $docker_machine_name"
+    cecho "    (This can and should fail if the container was already created.)"
+    docker run \
+       -p 3022:22 --name $docker_machine_name \
+       --restart always -d \
+       lnl7/nix:ssh
+       #sh -c "chmod +x /etc/ssh/sshd_config ; sed -i.bak -e  '/AcceptEnv/{;:a;n;ba;q}' -e '\$aAcceptEnv AWS_*' /etc/ssh/sshd_config ; $(docker inspect -f '{{.Config.Cmd}}' lnl7/nix:ssh | tr -d '[]')"
+fi
+
+# -- Write remote systems configuration --
+cecho ">>> Writing remote systems configuration to $remote_sys_conf"
+rm -f "$remote_sys_conf"
+cat > "$remote_sys_conf" <<CONF
+$docker_machine_name x86_64-linux $ssh_id_file 1
+CONF
+
+# -- Test connection --
+sleep 1
+cecho ">>> Running SSH test"
+ssh "$docker_machine_name" echo "SSH connection is working." || echo "SSH connection failed."
+
+#ssh "$docker_machine_name" mkdir -p /var/lib/nix-daemon
+#scp -r ~/.aws "$docker_machine_name":/var/lib/nix-daemon
+
+# -- Export environment --
+cecho ">>> Setting \$NIX_REMOTE_SYSTEMS to use $remote_sys_conf"
+export NIX_REMOTE_SYSTEMS="$remote_sys_conf"
