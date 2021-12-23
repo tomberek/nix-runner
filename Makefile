@@ -6,17 +6,17 @@ NIX_ARGS= --argstr system x86_64-linux
 docker: .dockeriid
 
 busybox:
-	nix-build '<nixpkgs>' ${NIX_ARGS} -A pkgsStatic.busybox
+	nix build nixpkgs#pkgsStatic.busybox
 	cp ./result/bin/busybox .
 
 nix:
-	nix-build -I dtz-nur=https://github.com/dtzWill/nur-packages/archive/master.tar.gz '<dtz-nur>' ${NIX_ARGS} -A pkgs.nix-mux
+	nix build nix#nix-static
 	cp ./result/bin/nix .
 	# TODO
 	#curl https://matthewbauer.us/nix > nix
 
 ca-bundle.crt:
-	nix-build '<nixpkgs>' ${NIX_ARGS} -A cacert
+	nix build nixpkgs#cacert
 	cp ./result/etc/ssl/certs/ca-bundle.crt .
 
 .dockeriid: Dockerfile nix busybox ca-bundle.crt

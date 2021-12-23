@@ -32,15 +32,4 @@ COPY passwd group /etc/
 ENV PATH=/bin:/usr/bin
 WORKDIR /tmp
 WORKDIR /
-
-ENV SUBSTITUTERS="https://cache.nixos.org?trusted=1"
-ENV NIXRUN="exec nix run -j auto --substituters $SUBSTITUTERS"
-
-ENV ENV_PATH=/nix/store/ca9mkrf8sa8md8pv61jslhcnfk9mmg4p-coreutils-8.31
-RUN $NIXRUN $ENV_PATH -c echo caching runtime deps
-
-# Example of prefetching additional layers
-# RUN $NIXRUN /nix/store/pyvdjig3g8ifavyiqrq8bbj7mz4xwsjl-cowsay-3.03+dfsg2 -c echo caching runtime deps
-
-ENTRYPOINT nix run -j auto --substituters "$SUBSTITUTERS" "$ENV_PATH" -c ${CMD-$0 $@}
-CMD ["/bin/sh"]
+COPY nix.conf /etc/nix/nix.conf
