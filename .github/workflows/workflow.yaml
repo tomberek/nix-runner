@@ -17,6 +17,8 @@ jobs:
           experimental-features = nix-command flakes
           access-tokens = ${{ secrets.GITHUB_TOKEN }}
     steps:
+       - name: Expose GitHub Runtime
+         uses: crazy-max/ghaction-github-runtime@v1
        - name: something
          run: |
            git clone https://${{secrets.GITHUB_TOKEN}}@github.com/$GITHUB_REPOSITORY repo && cd repo
@@ -24,6 +26,7 @@ jobs:
            echo hello
            nix --version
            nix run nixpkgs#hello
+           env | sort
        - name: Cache multiple paths
          uses: actions/cache@v3
          with:

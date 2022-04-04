@@ -1,0 +1,12 @@
+BUG_REPORT_URL="https://github.com/NixOS/nixpkgs/issues"
+BUILD_ID="22.05.20220323.1d08ea2"
+DOCUMENTATION_URL="https://nixos.org/learn.html"
+HOME_URL="https://nixos.org/"
+ID=nixos
+LOGO="nix-snowflake"
+NAME=NixOS
+PRETTY_NAME="NixOS 22.05 (Quokka)"
+SUPPORT_URL="https://nixos.org/community.html"
+VERSION="22.05 (Quokka)"
+VERSION_CODENAME=quokka
+VERSION_ID="22.05"

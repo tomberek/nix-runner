@@ -29,7 +29,7 @@ RUN ln -sf /bin/busybox /bin/sh && \
     ln -sf /bin/busybox /usr/bin/env && \
     ln -sf /bin/busybox /usr/bin/tail
 
-COPY passwd group /etc/
+COPY passwd group os-release /etc/
 COPY nix.conf /etc/nix/
 ENV PATH=/root/.nix-profile/bin:/bin:/usr/bin
 WORKDIR /tmp
