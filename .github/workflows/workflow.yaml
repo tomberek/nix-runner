@@ -30,6 +30,10 @@ jobs:
        - name: check env
          run: |
            env | sort
+       - name: try custom action
+         uses: tomberek/action@v1
+         with:
+           who-to-greet: 'test'
        - name: Cache multiple paths
          uses: actions/cache@v3
          with:
