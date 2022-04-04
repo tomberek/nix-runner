@@ -1,0 +1,31 @@
+name: "test docker"
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: '15 5 * * *'
+
+jobs:
+  eval_cache:
+    runs-on: ubuntu-latest
+    concurrency: ${{ github.ref}}
+    container:
+      image: tomberek/nix-runner
+      env:
+        NIX_CONFIG: |
+          experimental-features = nix-command flakes
+          access-tokens = ${{ secrets.GIT_TOKEN }}
+    steps:
+       - name: something
+         run: |
+           echo hello
+           nix --version
+           nix run nixpkgs#hello
+       - uses: actions/checkout@v2.4.0
+       - name: Cache multiple paths
+         uses: actions/cache@v3
+         with:
+           path: |
+             ~/.cache/nix
+           key: ${{ runner.os }}-${{ hashFiles('flake.lock') }}
