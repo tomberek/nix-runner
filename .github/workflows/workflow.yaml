@@ -35,4 +35,4 @@ jobs:
          with:
            path: |
              ~/.cache/nix
-           key: ${{ runner.os }}-${{ hashFiles('flake.lock') }}
+           key: ${{ runner.os }}
