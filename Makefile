@@ -18,7 +18,7 @@ ca-bundle.crt:
 	cp ./result/etc/ssl/certs/ca-bundle.crt .
 
 .dockeriid: Dockerfile nix busybox ca-bundle.crt
-	DOCKER_BUILDKIT=1 docker build --ssh default -t nix-runner . --iidfile .dockeriid
+	DOCKER_BUILDKIT=1 docker build --tag tomberek/nix-runner --ssh default -t nix-runner . --iidfile .dockeriid
 
 REGISTRY := registry.example.com/name:tag
 push: .dockeriid
@@ -36,7 +36,7 @@ run-env: .dockeriid env
 		nix-runner $(CMD)
 
 run-clean: .dockeriid
-	docker run --rm -e ENV_PATH=nixpkgs#bash -it nix-runner
+	docker run --rm -e -it nix-runner
 
 clean:
 	rm busybox nix ca-bundle.crt .dockeriid result

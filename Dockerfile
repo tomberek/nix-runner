@@ -26,20 +26,24 @@ RUN ln -sf /bin/busybox /bin/sh && \
     ln -sf /bin/busybox /bin/echo && \
     ln -sf /bin/busybox /bin/sleep && \
     ln -sf /bin/busybox /bin/seq && \
-    ln -sf /bin/busybox /usr/bin/env
+    ln -sf /bin/busybox /usr/bin/env && \
+    ln -sf /bin/busybox /usr/bin/tail
 
 COPY passwd group /etc/
 COPY nix.conf /etc/nix/
-ENV PATH=/bin:/usr/bin:/root/.nix-profile/bin
+ENV PATH=/root/.nix-profile/bin:/bin:/usr/bin
 WORKDIR /tmp
 WORKDIR /
 
 ENV NIX="exec nix --option use-sqlite-wal false -j auto --substituters https://cache.nixos.org?trusted=1"
 RUN $NIX flake show nixpkgs
-RUN $NIX shell nixpkgs#bashInteractive --command echo cached && $NIX profile install nixpkgs#bashInteractive nixpkgs#xz
+RUN $NIX shell nixpkgs#coreutils --command echo cached
+RUN $NIX shell nixpkgs#bashInteractive --command echo cached
 RUN $NIX profile install nixpkgs#s5cmd
 RUN $NIX profile install nixpkgs#gitMinimal
 RUN $NIX profile install nixpkgs#openssh
+RUN $NIX shell nixpkgs#nodejs --command echo cached
+RUN $NIX profile install nixpkgs#nodejs.libv8 nixpkgs#nodejs nixpkgs#coreutils.info nixpkgs#coreutils nixpkgs#bashInteractive.man nixpkgs#bashInteractive.dev nixpkgs#bashInteractive.info nixpkgs#bashInteractive.doc nixpkgs#bashInteractive
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 ENTRYPOINT $NIX shell nixpkgs#bashInteractive $ENV_PATH --command ${CMD-$0 $@}

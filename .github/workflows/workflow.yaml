@@ -15,14 +15,15 @@ jobs:
       env:
         NIX_CONFIG: |
           experimental-features = nix-command flakes
-          access-tokens = ${{ secrets.GIT_TOKEN }}
+          access-tokens = ${{ secrets.GITHUB_TOKEN }}
     steps:
        - name: something
          run: |
+           git clone https://${{secrets.GITHUB_TOKEN}}@github.com/$GITHUB_REPOSITORY repo && cd repo
+           ls -alh
            echo hello
            nix --version
            nix run nixpkgs#hello
-       - uses: actions/checkout@v2.4.0
        - name: Cache multiple paths
          uses: actions/cache@v3
          with:
