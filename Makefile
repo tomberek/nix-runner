@@ -17,7 +17,7 @@ ca-bundle.crt:
 	nix build nixpkgs#cacert
 	cp ./result/etc/ssl/certs/ca-bundle.crt .
 
-.dockeriid: Dockerfile nix busybox ca-bundle.crt
+.dockeriid: Dockerfile nix busybox ca-bundle.crt os-release nix.conf
 	DOCKER_BUILDKIT=1 docker build --tag tomberek/nix-runner --ssh default -t nix-runner . --iidfile .dockeriid
 
 REGISTRY := registry.example.com/name:tag
