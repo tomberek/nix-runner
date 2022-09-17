@@ -42,18 +42,12 @@ RUN $NIX shell nixpkgs#bashInteractive --command echo cached
 RUN $NIX profile install nixpkgs#s5cmd
 RUN $NIX profile install nixpkgs#gitMinimal
 RUN $NIX profile install nixpkgs#openssh
-RUN $NIX shell nixpkgs#nodejs --command echo cached
-RUN $NIX profile install nixpkgs#nodejs.libv8 nixpkgs#nodejs \
-nixpkgs#coreutils.info nixpkgs#coreutils \
+RUN $NIX profile install nixpkgs#coreutils.info nixpkgs#coreutils \
 nixpkgs#bashInteractive.man nixpkgs#bashInteractive.dev nixpkgs#bashInteractive.info nixpkgs#bashInteractive.doc nixpkgs#bashInteractive \
-nixpkgs#gnugrep.info nixpkgs#gnugrep nixpkgs#yarn \
+nixpkgs#gnugrep.info nixpkgs#gnugrep \
 nixpkgs#gnutar.info nixpkgs#gnutar \
 nixpkgs#gzip.info nixpkgs#gzip.man nixpkgs#gzip
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-RUN mkdir -p /lib64 && ln -s /nix/store/*glibc*/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
-RUN echo export LD_LIBRARY_PATH=/nix/store/18fz9jnhmfkzkh6p1iwwwng4i7x4rag7-gcc-10.3.0-lib/lib:/nix/store/q29bwjibv9gi9n86203s38n0577w09sx-glibc-2.33-117/lib >> /etc/profile
-ENV ENV=/etc/profile
-ENV LD_LIBRARY_PATH=/nix/store/18fz9jnhmfkzkh6p1iwwwng4i7x4rag7-gcc-10.3.0-lib/lib:/nix/store/q29bwjibv9gi9n86203s38n0577w09sx-glibc-2.33-117/lib
 
 #ENTRYPOINT $NIX shell nixpkgs#bashInteractive --command ${CMD-$0 $@}
 CMD ["/bin/sh"]
