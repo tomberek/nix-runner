@@ -56,7 +56,6 @@ fi
 if ! grep "$docker_machine_name" "$HOME/.ssh/config" > /dev/null; then
   cecho ">>> Adding an entry to $ssh_config for $docker_machine_name"
   cat >> "$ssh_config" <<CONF
-
 Host "$docker_machine_name"
   User root
   HostName 127.0.0.1
@@ -78,15 +77,27 @@ else
     docker run \
        -p 3022:22 --name $docker_machine_name \
        --restart always -d \
-       lnl7/nix:ssh
-       #sh -c "chmod +x /etc/ssh/sshd_config ; sed -i.bak -e  '/AcceptEnv/{;:a;n;ba;q}' -e '\$aAcceptEnv AWS_*' /etc/ssh/sshd_config ; $(docker inspect -f '{{.Config.Cmd}}' lnl7/nix:ssh | tr -d '[]')"
+       nixos/nix \
+       sh -c 'nix-env -iA nixpkgs.gnused &&
+              mkdir -p /etc/ssh && \
+              mkdir -p /root/.ssh && \
+              sed -i 's#/bin/bash#/bin/sh#' /etc/passwd && \
+              sed -i 's#!##' /etc/shadow && \
+              echo "sshd:x:498:65534::/var/empty:/run/current-system/sw/bin/nologin" >> /etc/passwd && \
+              ln -s /root/.nix-profile/bin/nix-store /usr/bin/nix-store && \
+              echo "'"$(cat $ssh_id_file.pub)"'" > /root/.ssh/authorized_keys && \
+              cat /root/.nix-profile/etc/ssh/sshd_config | grep -v PermitRoot > /etc/ssh/sshd_config && \
+              echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+              ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N "" -t rsa && \
+              mkdir -p /var/empty && \
+              /nix/store/*ssh*/bin/sshd -D -e'
 fi
 
 # -- Write remote systems configuration --
 cecho ">>> Writing remote systems configuration to $remote_sys_conf"
 rm -f "$remote_sys_conf"
 cat > "$remote_sys_conf" <<CONF
-$docker_machine_name x86_64-linux $ssh_id_file 1
+$docker_machine_name aarch64-linux $ssh_id_file 1
 CONF
 
 # -- Test connection --
