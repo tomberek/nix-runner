@@ -86,9 +86,19 @@ sleep 1
 cecho ">>> Running SSH test"
 ssh -i "$ssh_id_file" "root@$docker_machine_ip" echo "SSH connection is working." || echo "SSH connection failed."
 
+if [ -S /nix/var/nix/daemon-socket/socket ]; then
+    cecho ">>> Running SSH test as root"
+    sudo ssh -i "$ssh_id_file" "root@$docker_machine_ip" echo "root SSH connection is working." || echo "root SSH connection failed."
+fi
+
 #ssh "root@$docker_machine_ip" mkdir -p /var/lib/nix-daemon
 #scp -r ~/.aws "root@$docker_machine_ip":/var/lib/nix-daemon
 
 # -- Export environment --
+# TODO: is this the right format?
 cecho ">>> Setting \$NIX_REMOTE_SYSTEMS to use $remote_sys_conf"
 export NIX_REMOTE_SYSTEMS="$remote_sys_conf"
+
+# TODO: this will probably erase existing configured builders, does that matter?
+cecho ">>> Setting \$NIX_CONFIG to use $remote_sys_conf"
+export NIX_CONFIG="builders = @$remote_sys_conf"
