@@ -14,8 +14,6 @@ mkdir -p "$working_dir"
 ssh_id_file="$working_dir/insecure_rsa"
 remote_sys_conf="$working_dir/remote-systems.conf"
 
-ssh_config="$HOME/.ssh/config"
-
 docker_machine_name="nix-docker-build-slave"
 
 # -- Display info and troubleshooting tips --
@@ -29,9 +27,7 @@ echo  export NIX_REMOTE_SYSTEMS="$remote_sys_conf"
 cecho "##"
 cecho "## Troubleshooting: you can clean up the build slave artifacts and start over by:"
 cecho "##   1. rm -r ~/$working_dir_name"
-cecho "##   2. Delete entry in ~/.ssh/config for"
-cecho "##        Host \"$docker_machine_name\""
-cecho "##   3. Delete the docker container"
+cecho "##   2. Delete the docker container"
 cecho "##        docker kill $docker_machine_name"
 cecho "##        docker rm $docker_machine_name"
 cecho
@@ -51,23 +47,6 @@ if [ ! -f "$ssh_id_file" ]; then
     chmod 600 "$ssh_id_file"
 fi
 
-# -- Set up SSH configuration --
-[ -f "$ssh_config" ] || touch "$ssh_config"
-if ! grep "$docker_machine_name" "$HOME/.ssh/config" > /dev/null; then
-  cecho ">>> Adding an entry to $ssh_config for $docker_machine_name"
-  cat >> "$ssh_config" <<CONF
-Host "$docker_machine_name"
-  User root
-  HostName 127.0.0.1
-  Port 3022
-  IdentityFile "$ssh_id_file"
-  SendEnv AWS_ACCESS_KEY_ID
-  SendEnv AWS_SECRET_ACCESS_KEY
-CONF
-else
-  cecho ">>> SSH already contains entry for $docker_machine_name in $ssh_config"
-fi
-
 # -- Start docker container --
 if ( docker ps | grep --color -F nix-docker-build-slave ; ); then
     cecho ">>> Docker container $docker_machine_name already started"
@@ -75,7 +54,7 @@ else
     cecho ">>> Starting docker container: $docker_machine_name"
     cecho "    (This can and should fail if the container was already created.)"
     docker run \
-       -p 3022:22 --name $docker_machine_name \
+       --name $docker_machine_name \
        --restart always -d \
        nixos/nix \
        sh -c 'nix-env -iA nixpkgs.gnused &&
@@ -93,20 +72,22 @@ else
               /nix/store/*ssh*/bin/sshd -D -e'
 fi
 
+docker_machine_ip=$(docker inspect $docker_machine_name | jq -r '.[0].NetworkSettings.IPAddress')
+
 # -- Write remote systems configuration --
 cecho ">>> Writing remote systems configuration to $remote_sys_conf"
 rm -f "$remote_sys_conf"
 cat > "$remote_sys_conf" <<CONF
-$docker_machine_name aarch64-linux $ssh_id_file 1
+root@$docker_machine_ip $(nix eval --expr 'builtins.currentSystem' --impure --raw | cut -d'-' -f1)-linux $ssh_id_file 1
 CONF
 
 # -- Test connection --
 sleep 1
 cecho ">>> Running SSH test"
-ssh "$docker_machine_name" echo "SSH connection is working." || echo "SSH connection failed."
+ssh -i "$ssh_id_file" "root@$docker_machine_ip" echo "SSH connection is working." || echo "SSH connection failed."
 
-#ssh "$docker_machine_name" mkdir -p /var/lib/nix-daemon
-#scp -r ~/.aws "$docker_machine_name":/var/lib/nix-daemon
+#ssh "root@$docker_machine_ip" mkdir -p /var/lib/nix-daemon
+#scp -r ~/.aws "root@$docker_machine_ip":/var/lib/nix-daemon
 
 # -- Export environment --
 cecho ">>> Setting \$NIX_REMOTE_SYSTEMS to use $remote_sys_conf"
