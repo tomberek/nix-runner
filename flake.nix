@@ -5,8 +5,9 @@
   }: {
     packages =
       nixpkgs.lib.mapAttrs (system: pkgs: {
-        buildScript = pkgs.runCommand "start-docker-nix-build-slave" {} ''
-          cp ${./start-docker-nix-build-slave} $out
+        builderScript = pkgs.writeShellScript "start-docker-nix-build-slave" ''
+          PATH=$PATH:${nixpkgs.lib.makeBinPath (with pkgs; [jq curl])}
+          source ${./start-docker-nix-build-slave}
         '';
       })
       nixpkgs.legacyPackages;
