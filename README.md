@@ -2,6 +2,15 @@
 
 Use Nix inside docker. Build the container during runtime.
 
+# Nix In Docker Builder
+Start Nix in a Docker container such that it can serve as a remote builder.
+
+```
+ source $(nix build github:tomberek/nix-runner#builderScript --print-out-paths)
+```
+
+TODO: something to easily reset/undo
+
 ## Building
 ```shell
 make
