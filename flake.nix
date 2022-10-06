@@ -150,7 +150,7 @@
           };
       })
       (
-        builtins.removeAttrs nixpkgs.legacyPackages ["mipsel-linux"]
+        builtins.removeAttrs nixpkgs.legacyPackages ["mipsel-linux" "armv5tel-linux" "aarch64-darwin" "x86_64-darwin" "riscv64-linux"]
       );
   };
 }
