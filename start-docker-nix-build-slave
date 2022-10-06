@@ -27,7 +27,9 @@ echo  export NIX_REMOTE_SYSTEMS="$remote_sys_conf"
 cecho "##"
 cecho "## Troubleshooting: you can clean up the build slave artifacts and start over by:"
 cecho "##   1. rm -r ~/$working_dir_name"
-cecho "##   2. Delete the docker container"
+cecho "##   2. Delete entry in ~/.ssh/config for"
+cecho "##        Host \"$docker_machine_name\""
+cecho "##   3. Delete the docker container"
 cecho "##        docker kill $docker_machine_name"
 cecho "##        docker rm $docker_machine_name"
 cecho
@@ -47,14 +49,42 @@ if [ ! -f "$ssh_id_file" ]; then
     chmod 600 "$ssh_id_file"
 fi
 
+# -- Set up SSH configuration --
+read -r -d '' SSHCONF <<CONF
+Host "$docker_machine_name"
+  User root
+  HostName 127.0.0.1
+  Port 3022
+  IdentityFile "$ssh_id_file"
+  SendEnv AWS_ACCESS_KEY_ID
+  SendEnv AWS_SECRET_ACCESS_KEY
+CONF
+
+if ! test -f "$HOME/.ssh/config" || ! grep "$docker_machine_name" "$HOME/.ssh/config" > /dev/null; then
+  cecho ">>> Adding an entry to $HOME/.ssh/config for $docker_machine_name"
+  echo "$SSHCONF" > "$HOME/.ssh/config"
+else
+  cecho ">>> User SSH already contains entry for $docker_machine_name in $HOME/.ssh/config"
+fi
+
+if [ -S /nix/var/nix/daemon-socket/socket ]; then
+  if ! sudo test -f "/root/.ssh/config" || ! sudo grep "$docker_machine_name" "/root/.ssh/config" > /dev/null; then
+    cecho ">>> Adding an entry to /root/.ssh/config for $docker_machine_name"
+    echo "$SSHCONF" | sudo tee "/root/.ssh/config" > /dev/null
+  else
+    cecho ">>> Root SSH already contains entry for $docker_machine_name in /root/.ssh/config"
+  fi
+fi
+
 # -- Start docker container --
-if ( docker ps | grep --color -F nix-docker-build-slave ; ); then
+if ( docker ps | grep --color -F "$docker_machine_name" ; ); then
     cecho ">>> Docker container $docker_machine_name already started"
 else
     cecho ">>> Starting docker container: $docker_machine_name"
     cecho "    (This can and should fail if the container was already created.)"
     docker run \
        --name $docker_machine_name \
+       -p 3022:22 \
        --restart always -d \
        nixos/nix \
        sh -c 'nix-env -iA nixpkgs.gnused &&
@@ -72,27 +102,28 @@ else
               /nix/store/*ssh*/bin/sshd -D -e'
 fi
 
-docker_machine_ip=$(docker inspect $docker_machine_name | jq -r '.[0].NetworkSettings.IPAddress')
+# This does not work on macOS
+# docker_machine_ip=$(docker inspect $docker_machine_name | jq -r '.[0].NetworkSettings.IPAddress')
 
 # -- Write remote systems configuration --
 cecho ">>> Writing remote systems configuration to $remote_sys_conf"
 rm -f "$remote_sys_conf"
 cat > "$remote_sys_conf" <<CONF
-root@$docker_machine_ip $(nix eval --expr 'builtins.currentSystem' --impure --raw | cut -d'-' -f1)-linux $ssh_id_file 1
+$docker_machine_name $(nix eval --expr 'builtins.currentSystem' --impure --raw | cut -d'-' -f1)-linux $ssh_id_file 1
 CONF
 
 # -- Test connection --
 sleep 1
 cecho ">>> Running SSH test"
-ssh -i "$ssh_id_file" "root@$docker_machine_ip" echo "SSH connection is working." || echo "SSH connection failed."
+ssh "$docker_machine_name" echo "SSH connection is working." || echo "SSH connection failed."
 
 if [ -S /nix/var/nix/daemon-socket/socket ]; then
     cecho ">>> Running SSH test as root"
-    sudo ssh -i "$ssh_id_file" "root@$docker_machine_ip" echo "root SSH connection is working." || echo "root SSH connection failed."
+    sudo ssh "$docker_machine_name" echo "root SSH connection is working." || echo "root SSH connection failed."
 fi
 
-#ssh "root@$docker_machine_ip" mkdir -p /var/lib/nix-daemon
-#scp -r ~/.aws "root@$docker_machine_ip":/var/lib/nix-daemon
+#ssh "$docker_machine_name" mkdir -p /var/lib/nix-daemon
+#scp -r ~/.aws "$docker_machine_name":/var/lib/nix-daemon
 
 # -- Export environment --
 # TODO: is this the right format?
