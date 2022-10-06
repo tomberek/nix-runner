@@ -1,6 +1,2 @@
-nix
-busybox
-ca-bundle.crt
-rebellion-development-roots.crt
 .dockeriid
 result

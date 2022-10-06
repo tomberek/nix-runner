@@ -36,18 +36,10 @@ WORKDIR /tmp
 WORKDIR /
 
 ENV NIX="exec nix --option use-sqlite-wal false -j auto --substituters https://cache.nixos.org?trusted=1"
-RUN $NIX flake show nixpkgs
-RUN $NIX shell nixpkgs#coreutils --command echo cached
-RUN $NIX shell nixpkgs#bashInteractive --command echo cached
-RUN $NIX profile install nixpkgs#s5cmd
-RUN $NIX profile install nixpkgs#gitMinimal
-RUN $NIX profile install nixpkgs#openssh
-RUN $NIX profile install nixpkgs#coreutils.info nixpkgs#coreutils \
-nixpkgs#bashInteractive.man nixpkgs#bashInteractive.dev nixpkgs#bashInteractive.info nixpkgs#bashInteractive.doc nixpkgs#bashInteractive \
-nixpkgs#gnugrep.info nixpkgs#gnugrep \
-nixpkgs#gnutar.info nixpkgs#gnutar \
-nixpkgs#gzip.info nixpkgs#gzip.man nixpkgs#gzip
-RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+RUN $NIX registry pin nixpkgs && nix store gc
+RUN $NIX profile install nixpkgs#bashInteractive
+# RUN $NIX shell nixpkgs#coreutils --command echo cached
+# RUN $NIX shell nixpkgs#bashInteractive --command echo cached
+# RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-#ENTRYPOINT $NIX shell nixpkgs#bashInteractive --command ${CMD-$0 $@}
 CMD ["/bin/sh"]

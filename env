@@ -1,2 +1,0 @@
-CMD=cowsay blarg
-ENV_PATH=/nix/store/pyvdjig3g8ifavyiqrq8bbj7mz4xwsjl-cowsay-3.03+dfsg2
