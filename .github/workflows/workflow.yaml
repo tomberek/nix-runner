@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: ${{ github.ref}}
     container:
-      image: tomberek/nix-runner
+      image: tomberek/nix-runner:pure-nix
       env:
         NIX_CONFIG: |
           experimental-features = nix-command flakes
