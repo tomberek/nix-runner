@@ -1,2 +1,5 @@
 .dockeriid
 result
+nix
+ca-bundle.crt
+busybox
