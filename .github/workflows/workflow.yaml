@@ -23,5 +23,3 @@ jobs:
            ls -alh
            echo hello
            nix --version
-           env | sort
-           nix flake check

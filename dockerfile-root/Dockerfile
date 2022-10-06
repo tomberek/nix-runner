@@ -27,6 +27,7 @@ RUN ln -sf /bin/busybox /bin/sh && \
     ln -sf /bin/busybox /bin/sleep && \
     ln -sf /bin/busybox /bin/seq && \
     ln -sf /bin/busybox /bin/cp && \
+    ln -sf /bin/busybox /bin/id && \
     ln -sf /bin/busybox /usr/bin/env && \
     ln -sf /bin/busybox /usr/bin/tail
 
