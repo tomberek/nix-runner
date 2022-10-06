@@ -83,6 +83,15 @@
             alias flake='nix flake'
             EOF
             ln -s /etc/profile $out/root/.bashrc
+
+
+            # copied from https://github.com/teamniteo/nix-docker-base/commit/0a5ceed0441a32b25a33b6904a47e007231b58c6
+            # So that this image can be used as a GitHub Action container directly
+            # Needed because it calls its own (non-nix-patched) node binary which uses
+            # this dynamic linker path. See also the LD_LIBRARY_PATH assignment below,
+            # which provides the necessary libraries for that binary
+            mkdir $out/lib64
+            ln -s ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 $out/lib64/ld-linux-x86-64.so.2
           '';
         in
           dockerTools.buildImage {
@@ -134,6 +143,12 @@
             config = {
               Cmd = ["${bashInteractive}"];
               Env = [
+                # copied from https://github.com/teamniteo/nix-docker-base/commit/0a5ceed0441a32b25a33b6904a47e007231b58c6
+                # By default, the linker added in dynamicRootFiles can only find glibc
+                # libraries, but the node binary from the GitHub Actions runner also
+                # depends on libstdc++.so.6, which is glibc/stdenv. Using LD_LIBRARY_PATH
+                # is the easiest way to inject this dependency
+                "LD_LIBRARY_PATH=${lib.makeLibraryPath [ pkgs.stdenv.cc.cc ]}"
                 "XDG_DATA_DIRS=/share"
                 "PAGER=${less}/bin/less"
                 "NIXPKGS=${nixpkgs}"

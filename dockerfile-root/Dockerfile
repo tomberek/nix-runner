@@ -26,6 +26,7 @@ RUN ln -sf /bin/busybox /bin/sh && \
     ln -sf /bin/busybox /bin/echo && \
     ln -sf /bin/busybox /bin/sleep && \
     ln -sf /bin/busybox /bin/seq && \
+    ln -sf /bin/busybox /bin/cp && \
     ln -sf /bin/busybox /usr/bin/env && \
     ln -sf /bin/busybox /usr/bin/tail
 
@@ -37,9 +38,13 @@ WORKDIR /
 
 ENV NIX="exec nix --option use-sqlite-wal false -j auto --substituters https://cache.nixos.org?trusted=1"
 RUN $NIX registry pin nixpkgs && nix store gc
-RUN $NIX profile install nixpkgs#bashInteractive
 # RUN $NIX shell nixpkgs#coreutils --command echo cached
 # RUN $NIX shell nixpkgs#bashInteractive --command echo cached
 # RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+RUN $NIX profile install nixpkgs#stdenv.cc.cc nixpkgs#bashInteractive
+RUN sh -c 'mkdir -p /lib64 && ln -s /nix/store/*glibc*/lib/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2'
+RUN sh -c 'echo export LD_LIBRARY_PATH=$(echo /nix/store/*-gcc-*-lib/lib):$(echo /nix/store/*-glibc-2*/lib) >> /etc/profile'
+RUN cp /etc/profile /root/.bashrc
+ENV ENV=/etc/profile
 
 CMD ["/bin/sh"]
