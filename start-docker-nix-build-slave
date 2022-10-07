@@ -49,8 +49,7 @@ if [ ! -f "$ssh_id_file" ]; then
     chmod 600 "$ssh_id_file"
 fi
 
-# -- Set up SSH configuration --
-read -r -d '' SSHCONF <<CONF
+SSHCONF=$(cat <<CONF
 Host "$docker_machine_name"
   User root
   HostName 127.0.0.1
@@ -59,6 +58,7 @@ Host "$docker_machine_name"
   SendEnv AWS_ACCESS_KEY_ID
   SendEnv AWS_SECRET_ACCESS_KEY
 CONF
+)
 
 if ! test -f "$HOME/.ssh/config" || ! grep "$docker_machine_name" "$HOME/.ssh/config" > /dev/null; then
   cecho ">>> Adding an entry to $HOME/.ssh/config for $docker_machine_name"
