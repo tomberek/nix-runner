@@ -11,7 +11,9 @@
           PATH=$PATH:${nixpkgs.lib.makeBinPath (with pkgs; [jq curl])}
           source ${./start-docker-nix-build-slave}
         '';
-
+      })
+      nixpkgs.legacyPackages
+      // nixpkgs.lib.mapAttrs (system: pkgs: rec {
         default = oci;
         oci = with pkgs; let
           tools = [
@@ -148,7 +150,7 @@
                 # libraries, but the node binary from the GitHub Actions runner also
                 # depends on libstdc++.so.6, which is glibc/stdenv. Using LD_LIBRARY_PATH
                 # is the easiest way to inject this dependency
-                "LD_LIBRARY_PATH=${lib.makeLibraryPath [ pkgs.stdenv.cc.cc ]}"
+                "LD_LIBRARY_PATH=${lib.makeLibraryPath [pkgs.stdenv.cc.cc]}"
                 "XDG_DATA_DIRS=/share"
                 "PAGER=${less}/bin/less"
                 "NIXPKGS=${nixpkgs}"
