@@ -62,17 +62,20 @@ CONF
 
 if ! test -f "$HOME/.ssh/config" || ! grep "$docker_machine_name" "$HOME/.ssh/config" > /dev/null; then
   cecho ">>> Adding an entry to $HOME/.ssh/config for $docker_machine_name"
-  echo "$SSHCONF" > "$HOME/.ssh/config"
+  mkdir -p "$HOME/.ssh"
+  echo "$SSHCONF" >> "$HOME/.ssh/config"
 else
   cecho ">>> User SSH already contains entry for $docker_machine_name in $HOME/.ssh/config"
 fi
 
 if [ -S /nix/var/nix/daemon-socket/socket ]; then
-  if ! sudo test -f "/root/.ssh/config" || ! sudo grep "$docker_machine_name" "/root/.ssh/config" > /dev/null; then
-    cecho ">>> Adding an entry to /root/.ssh/config for $docker_machine_name"
-    echo "$SSHCONF" | sudo tee "/root/.ssh/config" > /dev/null
+  ROOT_HOME=~root
+  if ! sudo test -f "$ROOT_HOME/.ssh/config" || ! sudo grep "$docker_machine_name" "$ROOT_HOME/.ssh/config" > /dev/null; then
+    cecho ">>> Adding an entry to $ROOT_HOME/.ssh/config for $docker_machine_name"
+    sudo mkdir -p "$ROOT_HOME/.ssh"
+    echo "$SSHCONF" | sudo tee "$ROOT_HOME/.ssh/config" > /dev/null
   else
-    cecho ">>> Root SSH already contains entry for $docker_machine_name in /root/.ssh/config"
+    cecho ">>> Root SSH already contains entry for $docker_machine_name in $ROOT_HOME/.ssh/config"
   fi
 fi
 
