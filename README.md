@@ -41,3 +41,6 @@ nix store gc --option keep-derivations false && nix path-info --all -sSh | sort 
 
 ### Why use this?
 If you want to use Nix, but don't want to build a container using Nix tooling, these are minimal containers that can fetch everything it needs during runtime given the proper environment variables and access to the correct binary caches. Updating the environment variables and bouncing the containers makes for quick and easy update of services.
+
+### References
+Some ideas from https://github.com/teamniteo/nix-docker-base/blob/master/image.nix

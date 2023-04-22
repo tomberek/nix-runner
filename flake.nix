@@ -86,6 +86,20 @@
               alias develop='nix develop'
               alias flake='nix flake'
               EOF
+              mkdir -p $out/bin
+              cat > $out/bin/n << 'EOF'
+              #!/bin/sh
+              nix "$@"
+              EOF
+              cat > $out/bin/run << 'EOF'
+              #!/bin/sh
+              nix run "$@"
+              EOF
+              cat > $out/bin/shell << 'EOF'
+              #!/bin/sh
+              nix shell "$@"
+              EOF
+              chmod +x $out/bin/*
               ln -s /etc/profile $out/root/.bashrc
 
 
@@ -156,12 +170,12 @@
                   "XDG_DATA_DIRS=/share"
                   "PAGER=${less}/bin/less"
                   "NIXPKGS=${nixpkgs}"
-                  "PATH=${
+                  "PATH=/root/.nix-profile/bin:${
                     buildEnv {
                       name = "tools";
                       paths = tools;
                     }
-                  }/bin"
+                  }/bin:/usr/bin:/bin"
                 ];
                 Entrypoint = ["sh" "-c" "nix shell \${CMD-$0 $@}"];
                 WorkingDir = "/tmp";
