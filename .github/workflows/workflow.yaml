@@ -23,3 +23,12 @@ jobs:
            ls -alh
            echo hello
            nix --version
+
+
+  test_build:
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/tomberek/nix-runner:pure-nix
+    steps:
+      - name: hello
+        run: nix run nixpkgs#hello
