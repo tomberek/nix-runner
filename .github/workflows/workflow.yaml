@@ -17,12 +17,14 @@ jobs:
           experimental-features = nix-command flakes
           access-tokens = ${{ secrets.GITHUB_TOKEN }}
     steps:
-       - name: something
-         run: |
-           git clone https://${{secrets.GITHUB_TOKEN}}@github.com/$GITHUB_REPOSITORY repo && cd repo
-           ls -alh
-           echo hello
-           nix --version
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+      - name: something
+        run: |
+          git clone https://${{secrets.GITHUB_TOKEN}}@github.com/$GITHUB_REPOSITORY repo && cd repo
+          ls -alh
+          echo hello
+          nix --version
 
 
   test_build:
