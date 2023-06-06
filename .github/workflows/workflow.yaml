@@ -24,6 +24,7 @@ jobs:
           git clone https://${{secrets.GITHUB_TOKEN}}@github.com/$GITHUB_REPOSITORY repo && cd repo
           ls -alh
           echo hello
+          env
           nix --version
 
 
