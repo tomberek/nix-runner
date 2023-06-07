@@ -27,7 +27,7 @@
               gnutar
               gzip
               bash-completion
-              nixStatic
+              nixUnstable
             ];
             registry = runCommand "registry" {} ''
               mkdir -p $out/etc/nix
@@ -125,7 +125,7 @@
                   dockerTools.usrBinEnv
                   dockerTools.caCertificates
                   bash-completion
-                  nixStatic
+                  nixUnstable
                   cache
                   registry
                   profile
@@ -166,7 +166,7 @@
                   # libraries, but the node binary from the GitHub Actions runner also
                   # depends on libstdc++.so.6, which is glibc/stdenv. Using LD_LIBRARY_PATH
                   # is the easiest way to inject this dependency
-                  "LD_LIBRARY_PATH=${lib.makeLibraryPath [pkgs.stdenv.cc.cc]}"
+                  "LD_LIBRARY_PATH=${lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}"
                   "XDG_DATA_DIRS=/share"
                   "PAGER=${less}/bin/less"
                   "NIXPKGS=${nixpkgs}"
