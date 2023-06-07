@@ -85,6 +85,7 @@
               alias shell='nix shell'
               alias develop='nix develop'
               alias flake='nix flake'
+              export LD_LIBRARY_PATH=${lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}
               EOF
               mkdir -p $out/bin
               cat > $out/bin/n << 'EOF'
