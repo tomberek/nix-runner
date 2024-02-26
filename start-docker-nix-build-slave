@@ -112,7 +112,7 @@ fi
 cecho ">>> Writing remote systems configuration to $remote_sys_conf"
 rm -f "$remote_sys_conf"
 cat > "$remote_sys_conf" <<CONF
-$docker_machine_name $(nix eval --expr 'builtins.currentSystem' --impure --raw | cut -d'-' -f1)-linux $ssh_id_file 1
+$docker_machine_name $(nix eval --extra-experimental-features nix-command --expr 'builtins.currentSystem' --impure --raw | cut -d'-' -f1)-linux $ssh_id_file 1
 CONF
 
 # -- Test connection --
