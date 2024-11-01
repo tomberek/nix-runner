@@ -1,5 +1,6 @@
 # syntax = ghcr.io/akihirosuda/buildkit-nix:v0.0.2@sha256:ad13161464806242fd69dbf520bd70a15211b557d37f61178a4bf8e1fd39f1f2
 {
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   outputs = {
     self,
     nixpkgs,
@@ -176,6 +177,7 @@
                       paths = tools;
                     }
                   }/bin:/usr/bin:/bin"
+                  # TODO: Known issue with HOME warning: https://github.com/actions/runner/issues/863
                 ];
                 Entrypoint = ["sh" "-c" "nix shell \${CMD-$0 $@}"];
                 WorkingDir = "/tmp";
