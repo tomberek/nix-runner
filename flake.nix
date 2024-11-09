@@ -18,19 +18,19 @@
       )
       (nixpkgs.lib.mapAttrs (system: pkgs: rec {
           default = oci;
-          oci = with pkgs; let
+          oci = let
             tools = [
-              bashInteractive
-              coreutils
-              openssh
-              gitMinimal
-              gnugrep
-              gnutar
-              gzip
-              bash-completion
-              nixUnstable
+              pkgs.bashInteractive
+              pkgs.coreutils
+              pkgs.openssh
+              pkgs.gitMinimal
+              pkgs.gnugrep
+              pkgs.gnutar
+              pkgs.gzip
+              pkgs.bash-completion
+              pkgs.nixVersions.latest
             ];
-            registry = runCommand "registry" {} ''
+            registry = pkgs.runCommand "registry" {} ''
               mkdir -p $out/etc/nix
               cat > $out/etc/nix/registry.json <<EOF
               {
@@ -64,17 +64,20 @@
               }
               EOF
             '';
-            cache = runCommand "registry" {} ''
+            cache = pkgs.runCommand "registry" {} ''
               export NIX_REMOTE=local?root=$PWD
               export HOME=$PWD
               export NIX_CONFIG='extra-experimental-features = nix-command flakes
               flake-registry = ${registry}/etc/nix/registry.json
               '
-              ${nixStatic}/bin/nix --offline search nixpkgs hello
+              ${pkgs.nixStatic}/bin/nix --offline search nixpkgs hello
               mkdir -p $out/root/.cache/nix
               cp -r .cache/nix/eval-cache-v* $out/root/.cache/nix/
+
+              mkdir -p $out/home/user/.cache/nix
+              cp -r .cache/nix/eval-cache-v* $out/home/user/.cache/nix/
             '';
-            profile = runCommand "profile" {} ''
+            profile = pkgs.runCommand "profile" {} ''
               mkdir -p $out/etc
               mkdir -p $out/root/
               cat > $out/etc/profile <<EOF
@@ -102,8 +105,6 @@
               EOF
               chmod +x $out/bin/*
               ln -s /etc/profile $out/root/.bashrc
-
-
               # copied from https://github.com/teamniteo/nix-docker-base/commit/0a5ceed0441a32b25a33b6904a47e007231b58c6
               # So that this image can be used as a GitHub Action container directly
               # Needed because it calls its own (non-nix-patched) node binary which uses
@@ -113,20 +114,20 @@
               ln -s ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 $out/lib64/ld-linux-x86-64.so.2
             '';
           in
-            dockerTools.buildImage {
+            pkgs.dockerTools.buildImage {
               name = "docker.io/tomberek/nix-runner";
               tag = "pure-nix";
               created = "now";
-              copyToRoot = buildEnv {
+              copyToRoot = pkgs.buildEnv {
                 name = "wrapper";
                 paths = [
                   ./root
-                  dockerTools.binSh
-                  dockerTools.fakeNss
-                  dockerTools.usrBinEnv
-                  dockerTools.caCertificates
-                  bash-completion
-                  nixUnstable
+                  pkgs.dockerTools.binSh
+                  pkgs.dockerTools.fakeNss
+                  pkgs.dockerTools.usrBinEnv
+                  pkgs.dockerTools.caCertificates
+                  pkgs.bash-completion
+                  pkgs.nixVersions.latest
                   cache
                   registry
                   profile
@@ -135,6 +136,22 @@
                 #pathsToLink = ["/bin" "/lib" "/etc" "/var"];
               };
 
+              runAsRoot = ''
+                  mkdir -p /home/user
+                  ln -s /etc/profile /home/user/.bashrc
+                  mkdir -p /nix/var/nix/profiles/per-user/user
+                  mkdir -p /nix/var/nix/gcroots/
+                  mkdir -p /nix/var/nix/temproots/
+                  mkdir -p /nix/var/nix/db
+                  touch /nix/var/nix/gc.lock
+
+                  chown 1000 -R /nix/var/nix
+                  chgrp 1000 -R /nix/var/nix
+                  chmod 755 -R /nix/var/nix
+                  chown 1000 -R /home/user
+                  chgrp 1000 -R /home/user
+                  chmod 755 -R /home/user
+              '';
               extraCommands = let
                 contentsList =
                   [nixpkgs]
@@ -151,28 +168,30 @@
                   export NIX_REMOTE=local?root=$PWD
                   # A user is required by nix
                   # https://github.com/NixOS/nix/blob/9348f9291e5d9e4ba3c4347ea1b235640f54fd79/src/libutil/util.cc#L478
-                  export USER=nobody
-                  ${buildPackages.nix}/bin/nix-store --load-db < ${closureInfo {rootPaths = contentsList;}}/registration
+                  export USER=user
+                  ${pkgs.buildPackages.nix}/bin/nix-store --load-db < ${pkgs.closureInfo {rootPaths = contentsList;}}/registration
                   mkdir -p nix/var/nix/gcroots/docker/
-                  for i in ${lib.concatStringsSep " " contentsList}; do
+                  for i in ${pkgs.lib.concatStringsSep " " contentsList}; do
                   ln -s $i nix/var/nix/gcroots/docker/$(basename $i)
                   done;
+                  chown 1000 -R nix
                 '';
-              in [mkDbExtraCommand];
+              in mkDbExtraCommand;
               config = {
-                Cmd = ["${bashInteractive}"];
+                Cmd = ["${pkgs.bashInteractive}"];
+                User = "user";
                 Env = [
                   # copied from https://github.com/teamniteo/nix-docker-base/commit/0a5ceed0441a32b25a33b6904a47e007231b58c6
                   # By default, the linker added in dynamicRootFiles can only find glibc
                   # libraries, but the node binary from the GitHub Actions runner also
                   # depends on libstdc++.so.6, which is glibc/stdenv. Using LD_LIBRARY_PATH
                   # is the easiest way to inject this dependency
-                  "LD_LIBRARY_PATH=${lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}"
+                  "LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [pkgs.stdenv.cc.cc.lib]}"
                   "XDG_DATA_DIRS=/share"
-                  "PAGER=${less}/bin/less"
+                  "PAGER=${pkgs.less}/bin/less"
                   "NIXPKGS=${nixpkgs}"
-                  "PATH=/root/.nix-profile/bin:${
-                    buildEnv {
+                  "PATH=/root/.nix-profile/bin:/home/user/.nix-profile/bin:${
+                    pkgs.buildEnv {
                       name = "tools";
                       paths = tools;
                     }
